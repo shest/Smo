@@ -3,9 +3,10 @@
 
 #include "Simulator.h"
 #include <algorithm>
+#include <memory>
 
 int main() {
-	Simulator* worker(new Simulator());
+	auto worker = std::make_unique<Simulator>();
 	srand((unsigned)time(NULL));
 	std::vector<double> sl = {3, 3, 3};
 	std::vector<double> dl = {3, 3};

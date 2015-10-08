@@ -12,11 +12,11 @@ Source::Source(const size_t s_id, const double s_lambda) : id(s_id), lambda(s_la
 
 const size_t Source::get_id() const { return id; }
 
-Event* Source::make_request() {
+unique_ptr<Event> Source::make_request() {
 	++rid;
 	get_new_time();
 	//cout << "event: " << id << "." << rid << " " << time << endl;
-	return new Event(id, rid, time);
+	return std::make_unique<Event>(id, rid, time);
 	//return new Event(id, rid, get_new_time());
 }
 

@@ -8,43 +8,44 @@
 #ifndef BUFFER_H_
 #define BUFFER_H_
 
-#include <vector>
 #include "Event.h"
 #include "Processor.h"
 #include "Package.h"
 
-using ReqBuffer = std::vector<Event*>;
-using RingDevBuffer = std::vector<Processor*>;
+using ReqBuffer = vector<PEvent>;
+using PProcessor = unique_ptr<Processor>;
+using RingDevBuffer = vector<PProcessor>;
+using std::unique_ptr;
 
 class Buffer {
 public:
 	Buffer() = default;
-	Buffer(RingDevBuffer &dev, size_t size, size_t src_cnt);
-	Event* put_in(Event* event);
-	Event* put_out(const double time);
+	Buffer(vector<std::unique_ptr<Processor>> &dev, const size_t size, const size_t src_cnt);
+	unique_ptr<Event> put_in(PEvent &event);
+	unique_ptr<Event> put_out(const double time);
 	bool empty();
-	const std::vector<std::size_t>& get_rejected() const;
-	const std::vector<std::size_t>& get_processed() const;
-	const std::vector<double>& get_wait_times() const;
-	const std::vector<double>& get_proc_times() const;
-	const std::vector<double>& get_working_times();
-	const std::vector<double>& get_waiting_times();
+	const vector<std::size_t>& get_rejected() const;
+	const vector<std::size_t>& get_processed() const;
+	const vector<double>& get_wait_times() const;
+	const vector<double>& get_proc_times() const;
+	const vector<double>& get_working_times();
+	const vector<double>& get_waiting_times();
 private:
 	RingDevBuffer devices;
-	RingDevBuffer::iterator free_dev = devices.begin();
+	RingDevBuffer::iterator free_dev;
 	ReqBuffer events;
 	Package package;
-	std::vector<std::size_t> rej_cnt;
-	std::vector<std::size_t> proc_cnt;
-	std::vector<double> wait_time;
-	std::vector<double> proc_time;
-	std::vector<double> waiting_dev_times;
-	std::vector<double> working_dev_times;
+	vector<std::size_t> rej_cnt;
+	vector<std::size_t> proc_cnt;
+	vector<double> wait_time;
+	vector<double> proc_time;
+	vector<double> waiting_dev_times;
+	vector<double> working_dev_times;
 	bool has_free_dev(const double event_time);
 	void next_dev();
-	Event* put_on_process(double time, const Event* event);
-	bool has_free_space(Event* event);
-	void reject(Event* event);
+	PEvent put_on_process(double time, PEvent &event);
+	bool has_free_space(PEvent &event);
+	void reject(PEvent &event);
 };
 
 #endif /* BUFFER_H_ */

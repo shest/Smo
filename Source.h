@@ -9,13 +9,15 @@
 #define SOURCE_H_
 
 #include "Event.h"
+#include <memory>
+using std::unique_ptr;
 
 class Source {
 public:
 	Source() = default;
 	Source(const size_t s_id, const double s_lambda);
 	const size_t get_id() const;
-	Event* make_request();
+	unique_ptr<Event> make_request();
 private:
 	const size_t id = 0;       // source number
 	size_t rid = -1;           // request number

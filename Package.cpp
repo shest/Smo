@@ -9,34 +9,32 @@
 #include <algorithm>
 #include <iostream>
 
-bool Package::set_package(std::vector<Event*> &events) {
+bool Package::set_package(vector<PEvent> &events) {
 	if (!package.empty()) return true;
 	auto priority = get_priority(events);
 	if (priority == -1) return false;
 	for (auto &it : events) {
 		if (it && it->get_sid() == priority) {
-			package.push_back(&it);
+			package.emplace_back(&it);
 		}
 	}
-	// ??? check package - should be in descending order
-	sort(package.begin(), package.end(), [](Event** r1, Event** r2)
-										{return (*r1)->get_rid() < (*r2)->get_rid(); });
-	for (auto v : package) {
-		std::cout << (*v)->get_sid() << "." << (*v)->get_rid() << std::endl;
-	}
+	sort(package.begin(), package.end(), [](const PPEvent &r1, const PPEvent &r2)
+										{return (*r1)->get_rid() > (*r2)->get_rid(); });
+//	for (auto v : package) {
+//		std::cout << (*v)->get_sid() << "." << (*v)->get_rid() << std::endl;
+//	}
 	return true;
 }
 
 bool Package::empty() const { return package.empty(); }
 
-Event& Package::pop() {
-		Event& req = **package.back();
-		*package.back() = nullptr;
+PEvent Package::pop() {
+		auto event = package.back()->release();
 		package.pop_back();
-		return req;
+		return std::make_unique<Event>(*event);
 }
 
-void Package::check(const Event* event) {
+void Package::check(PEvent &event) {
 	for (auto it = package.begin(); it != package.end(); it++) {
 		if (**it == event) {
 			package.erase(it);
@@ -45,18 +43,14 @@ void Package::check(const Event* event) {
 	}
 }
 
-size_t Package::get_priority(const std::vector<Event*> &events) {
-	size_t min = -1;
-	for (auto it : events) {
-		if (it) {
-			size_t cur = it->get_sid();
-			if (cur == 0) return 0;
-			if (cur < min) {
-				min = cur;
-			}
-		}
-	}
-	return min;
+size_t Package::get_priority(vector<PEvent> &events) {
+	auto min_it = std::min_element(events.begin(), events.end(), [](PEvent &lp, PEvent &rp) -> bool {
+		if (lp && rp) return lp->get_sid() < rp->get_sid();
+		if (lp && !rp) return true;
+		return false;
+	} );
+	if (*min_it) return min_it->get()->get_sid();
+	return -1;
 }
 
 

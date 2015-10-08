@@ -10,16 +10,22 @@
 
 #include "Event.h"
 #include <vector>
+#include <memory>
+
+using std::unique_ptr;
+using std::vector;
+using PEvent = unique_ptr<Event>;
+using PPEvent = unique_ptr<Event>* ;
 
 class Package {
 public:
-	bool set_package(std::vector<Event*> &events);
+	bool set_package(vector<PEvent> &events);
 	bool empty() const;
-	Event& pop();
-	void check(const Event* event);
+	PEvent pop();
+	void check(PEvent &event);
 private:
-	std::vector<Event**> package;
-	size_t get_priority(const std::vector<Event*> &events);
+	vector<PPEvent> package;
+	size_t get_priority(vector<PEvent> &events);
 };
 
 #endif /* PACKAGE_H_ */

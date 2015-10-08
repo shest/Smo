@@ -23,9 +23,9 @@ public:
 	const size_t get_rid() const;
 private:
 	eventType status = NONE;    // type of event (request or proc. release)
-	const double time = 0.0;    // time of event occurrence
-	const size_t dev_id = -1;   // device id
-	const size_t id = -1;       // request number
+	double time = 0.0;    // time of event occurrence
+	size_t dev_id = -1;   // device id
+	size_t id = -1;       // request number
 };
 
 #endif /* EVENT_H_ */

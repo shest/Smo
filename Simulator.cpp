@@ -10,29 +10,43 @@
 #include "Source.h"
 #include <iostream>
 #include <algorithm>
+#include <queue>
+
+
+struct GreaterThanByTime {
+	bool operator()(const unique_ptr<Event> &req1, const unique_ptr<Event> &req2) const {
+		return req1->get_time() > req2->get_time();
+	}
+};
+
+using std::unique_ptr;
+using std::priority_queue;
+using OrderedEvents = priority_queue<unique_ptr<Event>, vector<unique_ptr<Event>>, GreaterThanByTime>;
 
 Simulator::Simulator(size_t buf_size, size_t n) : BUF_CAPACITY(buf_size), N_REQ(n) {}
 
 void Simulator::start(const std::vector<double> &sLambda, const std::vector<double> &pLambda,
-							const double tao1, double tao2, bool step_mode) {
-	std::vector<Source*> sources;
-	std::vector<Processor*> devices;
+							const double tao1, const double tao2, bool step_mode) {
+	std::vector<unique_ptr<Source>> sources;
+	std::vector<std::unique_ptr<Processor>> devices;
 	OrderedEvents ordered_events;
 	size_t ind = 0;
 	for (auto lambda : sLambda) {
-		sources.push_back(new Source(ind++, lambda));
+//		sources.push_back(std::make_unique<Source>(ind++, lambda));
+		sources.emplace_back(new Source(ind++, lambda));
 		ordered_events.push(sources.back()->make_request());
 	}
 	ind = 0;
 	for (auto lambda : pLambda) {
-		devices.push_back(new Processor(ind++, tao1, tao2, lambda));
+//		devices.push_back(std::make_unique<Processor>(ind++, tao1, tao2, lambda));
+		devices.emplace_back(new Processor(ind++, tao1, tao2, lambda));
 	}
-	Buffer *buffer = new Buffer(devices, BUF_CAPACITY, sources.size());
+	unique_ptr<Buffer> buffer = std::make_unique<Buffer>(devices, BUF_CAPACITY, sources.size());
 
-	//if (step_mode) initscr();
-	// cycle of event processing
+//	if (step_mode) initscr();
+//	 cycle of event processing
 	for (size_t i = 0; i < N_REQ;) {
-		Event* pEvent = ordered_events.top();
+		unique_ptr<Event> pEvent(std::move(const_cast<unique_ptr<Event>&>(ordered_events.top())));
 		ordered_events.pop();
 		if (pEvent->is_request()) {
 			if (step_mode) {
@@ -42,9 +56,9 @@ void Simulator::start(const std::vector<double> &sLambda, const std::vector<doub
 			}
 			i++;
 			ordered_events.push(sources[pEvent->get_sid()]->make_request());
-			Event* pRel = buffer->put_in(pEvent);
+			auto pRel = buffer->put_in(pEvent);
 			if (pRel) {
-				ordered_events.push(pRel);
+				ordered_events.push(std::move(pRel));
 			}
 		}
 		else {
@@ -52,18 +66,18 @@ void Simulator::start(const std::vector<double> &sLambda, const std::vector<doub
 				std::cout << "Device Release " << pEvent->get_time() << std::endl;
 				//getch();
 			}
-			Event* pRel = buffer->put_out(pEvent->get_time());
+			auto pRel = buffer->put_out(pEvent->get_time());
 			if (pRel) {
-				ordered_events.push(pRel);
+				ordered_events.push(std::move(pRel));
 			}
 		}
 	}
-	// process remainded requests in buffer
+//	 process remained requests in buffer
 	while (!buffer->empty()) {
-		Event* pEvent = ordered_events.top();
+		unique_ptr<Event> pEvent(std::move(const_cast<unique_ptr<Event>&>(ordered_events.top())));
 		ordered_events.pop();
 		if (!pEvent->is_request()) {
-			if (Event* pRel = buffer->put_out(pEvent->get_time())) ordered_events.push(pRel);
+			if (auto pRel = buffer->put_out(pEvent->get_time())) ordered_events.push(std::move(pRel));
 		}
 	}
 	processed = buffer->get_processed();
